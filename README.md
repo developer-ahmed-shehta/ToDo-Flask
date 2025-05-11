@@ -29,7 +29,7 @@ A simple and elegant Todo web application built with **Flask**, **SQLAlchemy**, 
 
 | Main View | Edit Mode |
 |-----------|-----------|
-| ![Todo Main](Screenshot.png) | ![Edit Task](screenshot2.png) |
+| ![Todo Main](screenshot.png) | ![Edit Task](screenshot2.png) |
 
 *(Replace with actual screenshots of your app.)*
 
