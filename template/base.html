@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .main-container {
+            margin-top: 30px;
+            max-width: 600px;
+        }
+        .header {
+            color: #2185d0;
+            margin-bottom: 30px;
+        }
+        .todo-item {
+            transition: all 0.3s ease;
+            border-radius: 8px !important;
+            padding: 15px !important;
+        }
+        .todo-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+        }
+        .completed {
+            background-color: #f8f8f8;
+        }
+        .completed .todo-title {
+            color: #aaaaaa;
+            text-decoration: line-through;
+        }
+        .action-buttons {
+            margin-top: 15px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: #aaaaaa;
+        }
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        .edit-form {
+            display: none;
+            margin-top: 10px;
+        }
+        .todo-title {
+            cursor: pointer;
+            word-break: break-word;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ui main-container container">
+        <h1 class="ui center aligned header">
+            <i class="blue check circle outline icon"></i>
+            <div class="content">
+                To Do App
+                <div class="sub header">Manage your daily tasks</div>
+            </div>
+        </h1>
+
+        <div class="ui raised segment">
+            <form class="ui form" action="/add" method="post">
+                <div class="field">
+                    <div class="ui action input">
+                        <input type="text" name="title" placeholder="What needs to be done?" required>
+                        <button class="ui blue right labeled icon button" type="submit">
+                            <i class="plus icon"></i>
+                            Add Task
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="ui basic segment">
+            {% if todo_list %}
+                <div class="ui middle aligned divided list">
+                    {% for todo in todo_list %}
+                    <div class="ui segment todo-item {% if todo.complete %}completed{% endif %}" id="todo-{{ todo.id }}">
+                        <div class="todo-content">
+                            <div class="todo-title" onclick="enableEdit({{ todo.id }})">
+                                <i class="{% if todo.complete %}green check{% else %}grey circle outline{% endif %} icon"></i>
+                                <span class="title-text">{{ todo.title }}</span>
+                            </div>
+                            <div class="ui form edit-form" id="edit-form-{{ todo.id }}">
+                                <div class="field">
+                                    <div class="ui action input">
+                                        <input type="text" id="edit-input-{{ todo.id }}" value="{{ todo.title }}">
+                                        <button class="ui green icon button" onclick="saveEdit({{ todo.id }})">
+                                            <i class="save icon"></i>
+                                        </button>
+                                        <button class="ui grey icon button" onclick="cancelEdit({{ todo.id }})">
+                                            <i class="times icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="meta">
+                                <span class="ui {% if todo.complete %}green{% else %}grey{% endif %} horizontal label">
+                                    {% if todo.complete %}Completed{% else %}Pending{% endif %}
+                                </span>
+                                <span class="ui tiny grey text">ID: {{ todo.id }}</span>
+                            </div>
+                            <div class="action-buttons">
+                                <a class="ui compact {% if todo.complete %}basic{% endif %} green button" href="/update/{{ todo.id }}">
+                                    <i class="{% if todo.complete %}undo{% else %}check{% endif %} icon"></i>
+                                    {% if todo.complete %}Reopen{% else %}Complete{% endif %}
+                                </a>
+                                <a class="ui compact red button" href="/delete/{{ todo.id }}">
+                                    <i class="trash icon"></i>
+                                    Delete
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="ui placeholder segment empty-state">
+                    <i class="grey tasks icon"></i>
+                    <h3>No tasks yet!</h3>
+                    <p>Add your first task using the form above.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if todo_list %}
+        <div class="ui secondary segment">
+            <div class="ui tiny statistics">
+                <div class="statistic">
+                    <div class="value">
+                        {{ todo_list|length }}
+                    </div>
+                    <div class="label">
+                        Total Tasks
+                    </div>
+                </div>
+                <div class="statistic">
+                    <div class="value">
+                        {{ todo_list|selectattr("complete")|list|length }}
+                    </div>
+                    <div class="label">
+                        Completed
+                    </div>
+                </div>
+                <div class="statistic">
+                    <div class="value">
+                        {{ todo_list|rejectattr("complete")|list|length }}
+                    </div>
+                    <div class="label">
+                        Pending
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function enableEdit(todoId) {
+            // Hide the title and show the edit form
+            document.querySelector(`#todo-${todoId} .title-text`).style.display = 'none';
+            document.querySelector(`#edit-form-${todoId}`).style.display = 'block';
+            // Focus on the input field
+            const input = document.querySelector(`#edit-input-${todoId}`);
+            input.focus();
+            input.select();
+        }
+
+        function cancelEdit(todoId) {
+            // Show the title and hide the edit form
+            document.querySelector(`#todo-${todoId} .title-text`).style.display = 'inline';
+            document.querySelector(`#edit-form-${todoId}`).style.display = 'none';
+        }
+
+        function saveEdit(todoId) {
+            const newTitle = document.querySelector(`#edit-input-${todoId}`).value.trim();
+            if (newTitle) {
+                fetch(`/edit/${todoId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `title=${encodeURIComponent(newTitle)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the title text
+                        document.querySelector(`#todo-${todoId} .title-text`).textContent = newTitle;
+                        cancelEdit(todoId);
+                    }
+                });
+            }
+        }
+
+        // Handle Enter key in edit input
+        document.querySelectorAll('[id^="edit-input-"]').forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const todoId = this.id.split('-')[2];
+                    saveEdit(todoId);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
